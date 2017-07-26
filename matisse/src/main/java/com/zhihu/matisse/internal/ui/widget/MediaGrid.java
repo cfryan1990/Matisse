@@ -25,13 +25,20 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.drawee.interfaces.DraweeController;
+import com.facebook.drawee.view.SimpleDraweeView;
+import com.facebook.imagepipeline.common.Priority;
+import com.facebook.imagepipeline.common.ResizeOptions;
+import com.facebook.imagepipeline.request.ImageRequest;
+import com.facebook.imagepipeline.request.ImageRequestBuilder;
 import com.zhihu.matisse.R;
 import com.zhihu.matisse.internal.entity.Item;
 import com.zhihu.matisse.internal.entity.SelectionSpec;
 
 public class MediaGrid extends SquareFrameLayout implements View.OnClickListener {
 
-    private ImageView mThumbnail;
+    private SimpleDraweeView mThumbnail;
     private CheckView mCheckView;
     private ImageView mGifTag;
     private TextView mVideoDuration;
@@ -53,7 +60,7 @@ public class MediaGrid extends SquareFrameLayout implements View.OnClickListener
     private void init(Context context) {
         LayoutInflater.from(context).inflate(R.layout.media_grid_content, this, true);
 
-        mThumbnail = (ImageView) findViewById(R.id.media_thumbnail);
+        mThumbnail = (SimpleDraweeView) findViewById(R.id.media_thumbnail);
         mCheckView = (CheckView) findViewById(R.id.check_view);
         mGifTag = (ImageView) findViewById(R.id.gif);
         mVideoDuration = (TextView) findViewById(R.id.video_duration);
@@ -110,13 +117,29 @@ public class MediaGrid extends SquareFrameLayout implements View.OnClickListener
     }
 
     private void setImage() {
-        if (mMedia.isGif()) {
-            SelectionSpec.getInstance().imageEngine.loadGifThumbnail(getContext(), mPreBindInfo.mResize,
-                    mPreBindInfo.mPlaceholder, mThumbnail, mMedia.getContentUri());
-        } else {
-            SelectionSpec.getInstance().imageEngine.loadThumbnail(getContext(), mPreBindInfo.mResize,
-                    mPreBindInfo.mPlaceholder, mThumbnail, mMedia.getContentUri());
-        }
+//        if (mMedia.isGif()) {
+//            SelectionSpec.getInstance().imageEngine.loadGifThumbnail(getContext(), mPreBindInfo.mResize,
+//                    mPreBindInfo.mPlaceholder, mThumbnail, mMedia.getContentUri());
+//        } else {
+//            SelectionSpec.getInstance().imageEngine.loadThumbnail(getContext(), mPreBindInfo.mResize,
+//                    mPreBindInfo.mPlaceholder, mThumbnail, mMedia.getContentUri());
+
+        mThumbnail.getHierarchy().setPlaceholderImage(mPreBindInfo.mPlaceholder);
+        ImageRequest request = ImageRequestBuilder.newBuilderWithSource(mMedia.uri)
+                .setResizeOptions(new ResizeOptions(mPreBindInfo.mResize, mPreBindInfo.mResize))
+                .setProgressiveRenderingEnabled(true)
+//                    .setLocalThumbnailPreviewsEnabled(true)
+                .setRequestPriority(Priority.HIGH)
+                .build();
+
+        DraweeController draweeController = Fresco.newDraweeControllerBuilder()
+                .setOldController(mThumbnail.getController())
+                .setImageRequest(request)
+                .setAutoPlayAnimations(true)
+                .setTapToRetryEnabled(true)
+                .build();
+        mThumbnail.setController(draweeController);
+//        }
     }
 
     private void setVideoDuration() {
